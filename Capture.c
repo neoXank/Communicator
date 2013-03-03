@@ -97,14 +97,14 @@
  * compiler works.)
  *
  * The IP header size, in bytes, is the value of the IP header length,
- * as extracted from the "ip_vhl" field of "struct sniff_ip" with
+ * as extracted from the "ip_vhl" field of "struct capt_ip" with
  * the "IP_HL()" macro, times 4 ("times 4" because it's in units of
  * 4-byte words).  If that value is less than 20 - i.e., if the value
  * extracted with "IP_HL()" is less than 5 - you have a malformed
  * IP datagram.
  *
  * The TCP header size, in bytes, is the value of the TCP data offset,
- * as extracted from the "th_offx2" field of "struct sniff_tcp" with
+ * as extracted from the "th_offx2" field of "struct capt_tcp" with
  * the "TH_OFF()" macro, times 4 (for the same reason - 4-byte words).
  * If that value is less than 20 - i.e., if the value extracted with
  * "TH_OFF()" is less than 5 - you have a malformed TCP segment.
@@ -117,7 +117,7 @@
  * 
  * To find out how much payload there is:
  *
- * Take the IP *total* length field - "ip_len" in "struct sniff_ip" 
+ * Take the IP *total* length field - "ip_len" in "struct capt_ip" 
  * - and, first, check whether it's less than "IP_HL(ip)*4" (after
  * you've checked whether "IP_HL(ip)" is >= 5).  If it is, you have
  * a malformed IP datagram.
@@ -143,7 +143,7 @@
  ****************************************************************************
  * 
  * Example compiler command-line for GCC:
- *   gcc -Wall -o sniffex sniffex.c -lpcap
+ *   gcc -Wall -o captex captex.c -lpcap
  * 
  ****************************************************************************
  *
@@ -158,7 +158,7 @@
  * 1. Ethernet headers are always exactly 14 bytes, so we define this
  * explicitly with "#define". Since some compilers might pad structures to a
  * multiple of 4 bytes - some versions of GCC for ARM may do this -
- * "sizeof (struct sniff_ethernet)" isn't used.
+ * "sizeof (struct capt_ethernet)" isn't used.
  * 
  * 2. Check the link-layer type of the device that's being opened to make
  * sure it's Ethernet, since that's all we handle in this example. Other
@@ -208,14 +208,14 @@
 #define ETHER_ADDR_LEN	6
 
 /* Ethernet header */
-struct sniff_ethernet {
+struct capt_ethernet {
         u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
         u_char  ether_shost[ETHER_ADDR_LEN];    /* source host address */
         u_short ether_type;                     /* IP? ARP? RARP? etc */
 };
 
 /* IP header */
-struct sniff_ip {
+struct capt_ip {
         u_char  ip_vhl;                 /* version << 4 | header length >> 2 */
         u_char  ip_tos;                 /* type of service */
         u_short ip_len;                 /* total length */
@@ -236,7 +236,7 @@ struct sniff_ip {
 /* TCP header */
 typedef u_int tcp_seq;
 
-struct sniff_tcp {
+struct capt_tcp {
         u_short th_sport;               /* source port */
         u_short th_dport;               /* destination port */
         tcp_seq th_seq;                 /* sequence number */
@@ -412,9 +412,9 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	static int count = 1;                   /* packet counter */
 	
 	/* declare pointers to packet headers */
-	const struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
-	const struct sniff_ip *ip;              /* The IP header */
-	const struct sniff_tcp *tcp;            /* The TCP header */
+	const struct capt_ethernet *ethernet;  /* The ethernet header [1] */
+	const struct capt_ip *ip;              /* The IP header */
+	const struct capt_tcp *tcp;            /* The TCP header */
 	const char *payload;                    /* Packet payload */
 
 	int size_ip;
@@ -425,10 +425,10 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	count++;
 	
 	/* define ethernet header */
-	ethernet = (struct sniff_ethernet*)(packet);
+	ethernet = (struct capt_ethernet*)(packet);
 	
 	/* define/compute ip header offset */
-	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+	ip = (struct capt_ip*)(packet + SIZE_ETHERNET);
 	size_ip = IP_HL(ip)*4;
 	if (size_ip < 20) {
 		printf("   * Invalid IP header length: %u bytes\n", size_ip);
@@ -463,7 +463,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	 */
 	
 	/* define/compute tcp header offset */
-	tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
+	tcp = (struct capt_tcp*)(packet + SIZE_ETHERNET + size_ip);
 	size_tcp = TH_OFF(tcp)*4;
 	if (size_tcp < 20) {
 		printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
